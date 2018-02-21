@@ -10,7 +10,7 @@ docker run -e RABBIT_USER=user \
 -e RABBIT_PORT=5672 \
 -e RABBIT_QUEUE_FILE_OPS=my-queue \
 -e WAIT_TIME=1 \
---name local-file-worker jackytck/rabbit-go-file-docker:v0.0.1
+--name local-file-worker -d jackytck/rabbit-go-file-docker:v0.0.1
 ```
 
 ### Usage (with .env)
@@ -26,5 +26,10 @@ WAIT_TIME=1
 
 ``` bash
 #!/bin/bash
-docker run --env-file .env --name local-file-worker jackytck/rabbit-go-file-docker:v0.0.1
+docker run --env-file .env --name local-file-worker -d jackytck/rabbit-go-file-docker:v0.0.1
+```
+
+### Usage (with shared volume)
+``` bash
+docker run --env-file .env -v /etc/group:/etc/group:ro -v /etc/passwd:/etc/passwd:ro -u $( id -u $USER ):$( id -g $USER ) -v /mnt/data/drive:/home/drive --name local-file-worker -d jackytck/rabbit-go-file-docker:v0.0.1
 ```
