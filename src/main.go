@@ -6,7 +6,9 @@ import (
 	"io"
 	"log"
 	"os"
+	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/streadway/amqp"
@@ -113,6 +115,11 @@ func work(cmd Cmd) error {
 			log.Println("Removing:", f)
 			err = os.RemoveAll(f)
 		}
+	case "mkdir":
+		log.Printf("Making directory: %s (%s)\n", cmd.Args[0], cmd.Args[1])
+		syscall.Umask(0)
+		m, _ := strconv.ParseInt(cmd.Args[1], 0, 32)
+		err = os.MkdirAll(cmd.Args[0], os.FileMode(m))
 	}
 	return err
 }
