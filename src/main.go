@@ -61,7 +61,7 @@ func main() {
 			cmd := Cmd{}
 			json.Unmarshal(d.Body, &cmd)
 			err = work(cmd)
-			FailOnError(err, "Failed to work")
+			LogOnError(err, "Failed to work")
 			log.Printf("Done")
 			d.Ack(false)
 			time.Sleep(wait * time.Second)
@@ -107,7 +107,7 @@ func work(cmd Cmd) error {
 		err = os.Rename(cmd.Args[0], cmd.Args[1])
 	case "rm":
 		f := cmd.Args[0]
-		if strings.HasPrefix(f, "/root/main") || strings.HasPrefix(f, "/root/.env") {
+		if strings.HasPrefix(f, "/root") {
 			log.Println("Skipped removing:", f)
 		} else {
 			log.Println("Removing:", f)
