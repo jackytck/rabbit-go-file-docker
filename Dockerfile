@@ -4,7 +4,7 @@ FROM golang:1.10 as builder
 WORKDIR /go/src/app
 
 # dependencies
-RUN go get github.com/streadway/amqp github.com/joho/godotenv
+RUN go get github.com/streadway/amqp github.com/joho/godotenv github.com/ttacon/chalk
 
 # add source code
 ADD src src
