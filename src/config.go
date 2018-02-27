@@ -29,9 +29,18 @@ func LoadURI() string {
 }
 
 // LoadQueue loads the target queue of rabbit server from .env.
-func LoadQueue() string {
+func LoadQueue(name string) string {
 	loadEnv()
-	queue := os.Getenv("RABBIT_QUEUE_FILE_OPS")
+	var queue string
+	switch name {
+	case "work":
+		queue = os.Getenv("RABBIT_QUEUE")
+	case "ping":
+		queue = os.Getenv("RABBIT_PING")
+	case "pong":
+		queue = os.Getenv("RABBIT_PONG")
+	}
+
 	return queue
 }
 
