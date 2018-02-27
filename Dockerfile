@@ -21,7 +21,7 @@ WORKDIR /root
 
 # copy the binary from builder
 COPY --from=builder /go/src/app/main .
-RUN touch .env && chmod 644 .env && chmod 755 main && chmod 655 .
+RUN touch .env && chmod 644 .env && chmod 755 main && chmod 655 . && apk add --no-cache tzdata
 
 # run the binary
 CMD ["./main"]
