@@ -10,59 +10,30 @@ import (
 	"strings"
 	"syscall"
 	"time"
-
-	"github.com/streadway/amqp"
 )
 
 func main() {
 	uri := LoadURI()
-	queue := LoadQueue()
+	queue := LoadQueue("work")
 	wait := LoadWait()
+	ping := LoadQueue("ping")
+	pong := LoadQueue("pong")
 
-	conn, err := amqp.Dial(uri)
-	FailOnError(err, "Failed to connect to "+uri)
+	// connect to rabbit
+	conn, ch := ConnectRabbit(uri)
 	defer conn.Close()
-
-	ch, err := conn.Channel()
-	FailOnError(err, "Failed to open a channel")
 	defer ch.Close()
+	msgs := ConsumeQueue(conn, ch, queue, 1)
 
-	q, err := ch.QueueDeclare(
-		queue, // name
-		true,  // durable
-		false, // delete when usused
-		false, // exclusive
-		false, // no-wait
-		nil,   // arguments
-	)
-	FailOnError(err, "Failed to declare a queue "+queue)
-
-	err = ch.Qos(
-		1,     // prefetch count
-		0,     // prefetch size
-		false, // global
-	)
-	FailOnError(err, "Failed to set QoS")
-
-	msgs, err := ch.Consume(
-		q.Name, // queue
-		"",     // consumer
-		false,  // auto-ack
-		false,  // exclusive
-		false,  // no-local
-		false,  // no-wait
-		nil,    // args
-	)
-	FailOnError(err, "Failed to register a consumer")
-
-	forever := make(chan bool)
+	// subscribe to heartbeater
+	SubscribeHeartbeat(conn, ch, ping, pong, false)
 
 	go func() {
 		for d := range msgs {
 			log.Printf("Received a message: %s", d.Body)
 			cmd := Cmd{}
 			json.Unmarshal(d.Body, &cmd)
-			err = work(cmd)
+			err := work(cmd)
 			LogOnError(err, "Failed to work")
 			log.Printf("Done")
 			d.Ack(false)
@@ -71,6 +42,7 @@ func main() {
 	}()
 
 	log.Printf(" [*] Waiting for messages. To exit press CTRL+C")
+	forever := make(chan bool)
 	<-forever
 }
 
