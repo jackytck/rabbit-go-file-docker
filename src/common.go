@@ -40,6 +40,18 @@ func ConnectRabbit(uri string) (*amqp.Connection, *amqp.Channel) {
 	return conn, ch
 }
 
+// ExitOnClose exits the program when a close event occurs.
+func ExitOnClose(conn *amqp.Connection) {
+	go func() {
+		chanErr := make(chan *amqp.Error)
+		conn.NotifyClose(chanErr)
+
+		for e := range chanErr {
+			panic(e)
+		}
+	}()
+}
+
 // DeclareExchange declares an exchange.
 func DeclareExchange(ch *amqp.Channel, name string) {
 	err := ch.ExchangeDeclare(

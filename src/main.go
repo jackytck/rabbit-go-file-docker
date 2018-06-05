@@ -23,6 +23,7 @@ func main() {
 	conn, ch := ConnectRabbit(uri)
 	defer conn.Close()
 	defer ch.Close()
+	ExitOnClose(conn)
 	msgs := ConsumeQueue(conn, ch, queue, 1)
 
 	// subscribe to heartbeater
