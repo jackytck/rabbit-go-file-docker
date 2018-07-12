@@ -38,7 +38,7 @@ func main() {
 			LogOnError(err, "Failed to work")
 			log.Printf("Done")
 			d.Ack(false)
-			time.Sleep(wait * time.Second)
+			time.Sleep(wait * time.Millisecond)
 		}
 	}()
 
