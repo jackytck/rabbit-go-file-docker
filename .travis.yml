@@ -12,7 +12,7 @@ after_success:
   - |
     if [[ "$TRAVIS_BRANCH" == "master" ]]; then
       docker version
-      docker login -e="$DOCKER_EMAIL" -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
+      echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
       docker build -t jackytck/rabbit-go-file-docker:v0.0.3 .
       docker push jackytck/rabbit-go-file-docker:v0.0.3
     fi
