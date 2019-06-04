@@ -85,8 +85,8 @@ func DeclareRandQueue(ch *amqp.Channel) amqp.Queue {
 	q, err := ch.QueueDeclare(
 		"",    // name
 		false, // durable
-		false, // delete when usused
-		true,  // exclusive
+		true,  // delete when usused
+		false, // exclusive
 		false, // no-wait
 		nil,   // arguments
 	)
