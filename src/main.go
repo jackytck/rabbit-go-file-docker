@@ -75,6 +75,12 @@ func work(cmd Cmd) error {
 	var err error
 	switch cmd.Ops {
 	case "cp":
+		// sleep to wait for mkdir to propagate
+		s, err2 := strconv.Atoi(os.Getenv("CP_SLEEP"))
+		if err2 != nil {
+			s = 0
+		}
+		time.Sleep(time.Duration(s) * time.Second)
 		log.Printf("Copying: %s to %s\n", cmd.Args[0], cmd.Args[1])
 		_, err = copy(cmd.Args[0], cmd.Args[1])
 	case "mv":
