@@ -1,11 +1,14 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"syscall"
@@ -71,6 +74,62 @@ func copy(src, dst string) (int64, error) {
 	return io.Copy(dstFile, srcFile)
 }
 
+// merge will cat all then remove all
+func merge(dir, outName string) error {
+	parts, err := ioutil.ReadDir(dir)
+	if err != nil {
+		return err
+	}
+
+	// cat
+	var joined []byte
+	var ppath []string
+	for _, p := range parts {
+		if p.IsDir() {
+			continue
+		}
+		name := p.Name()
+		if outName == "" {
+			ext := filepath.Ext(name)
+			outName = name[:len(name)-len(ext)]
+		}
+		path := filepath.Join(dir, name)
+		ppath = append(ppath, path)
+		f, err2 := os.Open(path)
+		if err2 != nil {
+			return err2
+		}
+		bytes := make([]byte, p.Size())
+		buffer := bufio.NewReader(f)
+		n, err2 := buffer.Read(bytes)
+		if err2 != nil {
+			return err2
+		}
+		joined = append(joined, bytes[:n]...)
+		f.Close()
+	}
+
+	// write back
+	f, err := os.Create(filepath.Join(dir, outName))
+	if err != nil {
+		return err
+	}
+	_, err = f.Write(joined)
+	if err != nil {
+		return err
+	}
+
+	// remove parts
+	for _, v := range ppath {
+		err2 := os.Remove(v)
+		if err2 != nil {
+			return err2
+		}
+	}
+
+	return nil
+}
+
 func work(cmd Cmd) error {
 	var err error
 	switch cmd.Ops {
@@ -81,10 +140,10 @@ func work(cmd Cmd) error {
 			s = 0
 		}
 		time.Sleep(time.Duration(s) * time.Second)
-		log.Printf("Copying: %s to %s\n", cmd.Args[0], cmd.Args[1])
+		log.Printf("Copying: %q to %q\n", cmd.Args[0], cmd.Args[1])
 		_, err = copy(cmd.Args[0], cmd.Args[1])
 	case "mv":
-		log.Printf("Moving: %s to %s\n", cmd.Args[0], cmd.Args[1])
+		log.Printf("Moving: %q to %q\n", cmd.Args[0], cmd.Args[1])
 		err = os.Rename(cmd.Args[0], cmd.Args[1])
 	case "rm":
 		f := cmd.Args[0]
@@ -95,10 +154,14 @@ func work(cmd Cmd) error {
 			err = os.RemoveAll(f)
 		}
 	case "mkdir":
-		log.Printf("Making directory: %s (%s)\n", cmd.Args[0], cmd.Args[1])
+		log.Printf("Making directory: %q (%q)\n", cmd.Args[0], cmd.Args[1])
 		syscall.Umask(0)
 		m, _ := strconv.ParseInt(cmd.Args[1], 0, 32)
 		err = os.MkdirAll(cmd.Args[0], os.FileMode(m))
+	case "merge":
+		log.Printf("Merging: %q to %q", cmd.Args[0], cmd.Args[1])
+		err = merge(cmd.Args[0], cmd.Args[1])
+
 	}
 	return err
 }
