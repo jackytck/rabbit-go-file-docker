@@ -13,6 +13,8 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/streadway/amqp"
 )
 
 func main() {
@@ -37,7 +39,7 @@ func main() {
 			log.Printf("Received a message: %s", d.Body)
 			cmd := Cmd{}
 			json.Unmarshal(d.Body, &cmd)
-			err := work(cmd)
+			err := work(cmd, ch)
 			LogOnError(err, "Failed to work")
 			log.Printf("Done")
 			d.Ack(false)
@@ -75,7 +77,11 @@ func copy(src, dst string) (int64, error) {
 }
 
 // merge will cat all then remove all
-func merge(dir, outName string) error {
+func merge(c Cmd, ch *amqp.Channel) error {
+	dir := c.Args[0]
+	outName := c.Args[1]
+	doneQueue := c.Done
+
 	parts, err := ioutil.ReadDir(dir)
 	if err != nil {
 		return err
@@ -127,10 +133,12 @@ func merge(dir, outName string) error {
 		}
 	}
 
+	body, _ := json.Marshal(c)
+	Publish(ch, doneQueue, body)
 	return nil
 }
 
-func work(cmd Cmd) error {
+func work(cmd Cmd, ch *amqp.Channel) error {
 	var err error
 	switch cmd.Ops {
 	case "cp":
@@ -159,8 +167,9 @@ func work(cmd Cmd) error {
 		m, _ := strconv.ParseInt(cmd.Args[1], 0, 32)
 		err = os.MkdirAll(cmd.Args[0], os.FileMode(m))
 	case "merge":
+		// e.g. {"ops":"merge","args":["/tmp/multi-bunny","bunny.zip"],"id":"12345","done":"merge-done"}
 		log.Printf("Merging: %q to %q", cmd.Args[0], cmd.Args[1])
-		err = merge(cmd.Args[0], cmd.Args[1])
+		err = merge(cmd, ch)
 
 	}
 	return err
